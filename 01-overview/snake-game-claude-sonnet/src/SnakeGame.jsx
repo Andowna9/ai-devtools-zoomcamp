@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 
 const GRID_SIZE = 20;
 const CELL_SIZE = 20;
@@ -14,6 +14,7 @@ export default function SnakeGame() {
   const [score, setScore] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [wallMode, setWallMode] = useState('solid'); // 'solid' or 'passthrough'
+  const lastConsumedFoodRef = useRef(null);
 
   const generateFood = useCallback(() => {
     const newFood = {
@@ -30,6 +31,7 @@ export default function SnakeGame() {
     setGameOver(false);
     setScore(0);
     setIsPlaying(true);
+    lastConsumedFoodRef.current = null;
   };
 
   const checkCollision = useCallback((head) => {
@@ -69,11 +71,15 @@ export default function SnakeGame() {
       }
 
       const newSnake = [head, ...prevSnake];
+      const foodConsumed = head.x === food.x && head.y === food.y;
+      const foodKey = `${food.x},${food.y}`;
 
-      if (head.x === food.x && head.y === food.y) {
-        setScore(s => s + 5);
+      if (foodConsumed && lastConsumedFoodRef.current !== foodKey) {
+        // Only update score if this food hasn't been consumed yet (pure function)
+        lastConsumedFoodRef.current = foodKey;
+        setScore(s => s + 10);
         setFood(generateFood());
-      } else {
+      } else if (!foodConsumed) {
         newSnake.pop();
       }
 
@@ -154,10 +160,17 @@ export default function SnakeGame() {
       </div>
 
       <div 
-        className="relative bg-green-100 border-4 border-green-800"
+        className="relative bg-green-100"
         style={{
           width: GRID_SIZE * CELL_SIZE,
-          height: GRID_SIZE * CELL_SIZE
+          height: GRID_SIZE * CELL_SIZE,
+          outline: '4px solid rgb(22, 101, 52)',
+          outlineOffset: '-4px',
+          backgroundImage: `
+            linear-gradient(to right, rgba(34, 197, 94, 0.2) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(34, 197, 94, 0.2) 1px, transparent 1px)
+          `,
+          backgroundSize: `${CELL_SIZE}px ${CELL_SIZE}px`
         }}
       >
         {snake.map((segment, i) => (
